@@ -1,0 +1,230 @@
+openapi: 3.1.0
+info:
+  title: API de Originación Digital
+  description: |
+    API para la originación de productos financieros en un banco multi-región.
+    Incluye endpoints para solicitud de créditos, validación de identidad y evaluación de riesgo.
+  version: 1.0.0
+  contact:
+    name: Equipo de Arquitectura
+    email: arquitectura@banco.com
+  license:
+    name: Confidencial
+servers:
+  - url: https://api.banco.com/originacion/v1
+    description: Producción (Multi-región)
+  - url: https://api-sandbox.banco.com/originacion/v1
+    description: Sandbox para pruebas
+paths:
+  /solicitudes:
+    post:
+      summary: Crear una nueva solicitud de producto financiero
+      description: >
+        Endpoint para registrar una nueva solicitud de crédito, tarjeta o cuenta.
+        Requiere validación de identidad y evaluación de riesgo.
+      tags:
+        - Solicitudes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudRequest'
+      responses:
+        '201':
+          description: Solicitud creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudResponse'
+        '400':
+          description: Error en la validación de la solicitud
+        '500':
+          description: Error interno del servidor
+        '503':
+          description: Servicio no disponible (fallback activado)
+
+  /solicitudes/{id}:
+    get:
+      summary: Consultar estado de una solicitud
+      description: >
+        Obtiene el estado actual de una solicitud identificada por su ID.
+        Incluye información sobre validaciones y evaluaciones realizadas.
+      tags:
+        - Solicitudes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estado de la solicitud
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudEstadoResponse'
+        '404':
+          description: Solicitud no encontrada
+        '500':
+          description: Error interno del servidor
+
+  /validaciones/identidad:
+    post:
+      summary: Validar identidad del solicitante
+      description: >
+        Endpoint para validar la identidad del solicitante mediante servicios externos.
+        Requiere documento de identidad y datos biométricos.
+      tags:
+        - Validaciones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidacionIdentidadRequest'
+      responses:
+        '200':
+          description: Validación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidacionIdentidadResponse'
+        '400':
+          description: Error en la validación
+        '503':
+          description: Servicio de validación no disponible
+
+components:
+  schemas:
+    SolicitudRequest:
+      type: object
+      required:
+        - tipoProducto
+        - monto
+        - clienteId
+        - datosPersonales
+      properties:
+        tipoProducto:
+          type: string
+          enum: [CREDITO, TARJETA, CUENTA]
+        monto:
+          type: number
+          minimum: 100
+        clienteId:
+          type: string
+          format: uuid
+        datosPersonales:
+          $ref: '#/components/schemas/DatosPersonales'
+
+    SolicitudResponse:
+      type: object
+      properties:
+        solicitudId:
+          type: string
+          format: uuid
+        estado:
+          type: string
+          enum: [RECIBIDA, EN_VALIDACION, EN_EVALUACION, APROBADA, RECHAZADA]
+        fechaCreacion:
+          type: string
+          format: date-time
+
+    SolicitudEstadoResponse:
+      type: object
+      properties:
+        solicitudId:
+          type: string
+          format: uuid
+        estado:
+          type: string
+          enum: [RECIBIDA, EN_VALIDACION, EN_EVALUACION, APROBADA, RECHAZADA]
+        validaciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidacionItem'
+        evaluaciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluacionItem'
+
+    ValidacionItem:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum: [IDENTIDAD, RIESGO, CREDITICIA]
+        estado:
+          type: string
+          enum: [PENDIENTE, EXITOSA, FALLIDA]
+        fecha:
+          type: string
+          format: date-time
+
+    EvaluacionItem:
+      type: object
+      properties:
+        tipo:
+          type: string
+          enum: [SCORING, FRAUDE]
+        resultado:
+          type: string
+        fecha:
+          type: string
+          format: date-time
+
+    DatosPersonales:
+      type: object
+      required:
+        - nombre
+        - apellido
+        - documento
+        - email
+      properties:
+        nombre:
+          type: string
+        apellido:
+          type: string
+        documento:
+          type: string
+        email:
+          type: string
+          format: email
+        telefono:
+          type: string
+
+    ValidacionIdentidadRequest:
+      type: object
+      required:
+        - clienteId
+        - documento
+        - biométricos
+      properties:
+        clienteId:
+          type: string
+          format: uuid
+        documento:
+          type: string
+        biométricos:
+          type: object
+          properties:
+            huella:
+              type: string
+            rostro:
+              type: string
+
+    ValidacionIdentidadResponse:
+      type: object
+      properties:
+        clienteId:
+          type: string
+          format: uuid
+        estado:
+          type: string
+          enum: [VALIDADO, RECHAZADO]
+        puntuacion:
+          type: number
+          minimum: 0
+          maximum: 100

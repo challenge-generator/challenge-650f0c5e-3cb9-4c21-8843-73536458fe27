@@ -1,0 +1,29 @@
+```mermaid
+C4Context
+    title Diagrama de Contexto - Sistema de Originación Digital
+    
+    Person(cliente, "Cliente", "Usuario final que inicia una solicitud de originación")
+    Person(agente, "Agente Bancario", "Empleado del banco que gestiona solicitudes complejas")
+    
+    System(sistemaOriginacion, "Sistema de Originación Digital", "Banco", "Gestiona solicitudes de productos financieros")
+    
+    System_Ext(sistemaPagos, "Sistema de Pagos", "Procesa transacciones financieras")
+    System_Ext(proveedorIdentidad, "Proveedor de Identidad", "Valida identidad de clientes")
+    System_Ext(proveedorBuro, "Proveedor de Buró de Crédito", "Proporciona informes crediticios")
+    System_Ext(regulador, "Regulador Financiero", "Supervisa cumplimiento normativo")
+    
+    Rel(cliente, sistemaOriginacion, "Inicia solicitud", "HTTPS")
+    Rel(agente, sistemaOriginacion, "Gestiona solicitudes", "HTTPS")
+    Rel(sistemaOriginacion, sistemaPagos, "Procesa pagos", "HTTPS")
+    Rel(sistemaOriginacion, proveedorIdentidad, "Valida identidad", "HTTPS")
+    Rel(sistemaOriginacion, proveedorBuro, "Consulta historial crediticio", "HTTPS")
+    Rel(sistemaOriginacion, regulador, "Reporta transacciones", "HTTPS")
+    
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+```
+
+> Preguntas guía para completar las vistas de contenedores, componentes y despliegue:
+> 1. **Vista de Contenedores**: ¿Qué contenedores (microservicios, bases de datos, colas, etc.) componen el sistema de originación digital y cómo se comunican entre sí?
+> 2. **Vista de Componentes**: ¿Qué componentes internos tiene cada contenedor y cómo interactúan para cumplir con los ASRs?
+> 3. **Vista de Despliegue**: ¿Cómo se despliega el sistema en múltiples regiones para garantizar resiliencia y cumplimiento normativo?
+> 4. ¿Qué patrones arquitectónicos aplicarías para manejar la consistencia de datos entre regiones y garantizar la tolerancia a fallos?
